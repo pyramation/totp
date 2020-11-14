@@ -21,7 +21,7 @@ env:
 
 before_install:
   - yarn install
-  - docker run -p 7777:5432 --name postgres -v `pwd`/bin:/sql-bin -v `pwd`/extensions:/sql-extensions -v `pwd`/packages:/sql-packages -d pyramation/postgis
+  - docker run -p 7777:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_USER=postgres --name postgres -v `pwd`/bin:/sql-bin -v `pwd`/extensions:/sql-extensions -v `pwd`/packages:/sql-packages -d pyramation/postgis
   - sleep 3
   - while ! docker exec -it postgres pg_isready -U postgres -h 127.0.0.1; do echo "$(date) - waiting for database to start"; sleep 1; done
   - while ! docker exec postgres /sql-bin/install.sh; do echo "installing plugins"; sleep 3; done
