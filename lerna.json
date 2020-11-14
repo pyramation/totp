@@ -1,0 +1,22 @@
+{
+  "lerna": "3.4.2",
+  "useWorkspaces": true,
+  "npmClient": "yarn",
+  "npmClientArgs": [
+    "--no-lockfile"
+  ],
+  "packages": [
+    "packages/*"
+  ],
+  "version": "independent",
+  "registry": "https://registry.npmjs.org",
+  "command": {
+    "create": {
+      "license": "SEE LICENSE IN LICENSE",
+      "access": "restricted"
+    },
+    "publish": {
+      "allowBranch": "master"
+    }
+  }
+}

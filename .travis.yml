@@ -1,0 +1,32 @@
+language: node_js
+node_js:
+  - 12
+notifications:
+  email: false
+services:
+  - docker
+env:
+  global:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=password
+    - PGPORT=7777
+    - PGTEMPLATE_DATABASE=testing-template-db
+    - PGHOST=localhost
+    - PGPASSWORD=password
+    - PGUSER=postgres
+    - APP_USER=app_user
+    - APP_PASSWORD=app_password
+  matrix:
+    - PACKAGE=packages/totp
+
+before_install:
+  - yarn install
+  - docker run -p 7777:5432 --name postgres -v `pwd`/bin:/sql-bin -v `pwd`/extensions:/sql-extensions -v `pwd`/packages:/sql-packages -d pyramation/postgis
+  - sleep 3
+  - while ! docker exec -it postgres pg_isready -U postgres -h 127.0.0.1; do echo "$(date) - waiting for database to start"; sleep 1; done
+  - while ! docker exec postgres /sql-bin/install.sh; do echo "installing plugins"; sleep 3; done
+  - psql -f ./bootstrap-roles.sql postgres
+script:
+  - cd $PACKAGE
+  - yarn install
+  - yarn test

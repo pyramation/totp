@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`rfc6238 case: 1 1`] = `"94287082"`;
+
+exports[`rfc6238 case: 2 1`] = `"07081804"`;
+
+exports[`rfc6238 case: 3 1`] = `"14050471"`;
+
+exports[`rfc6238 case: 4 1`] = `"89005924"`;
+
+exports[`rfc6238 case: 5 1`] = `"69279037"`;
+
+exports[`rfc6238 case: 6 1`] = `"65353130"`;
+
+exports[`speakeasy test case: 1 1`] = `"287082"`;
+
+exports[`speakeasy test case: 2 1`] = `"081804"`;
+
+exports[`speakeasy test case: 3 1`] = `"360094"`;

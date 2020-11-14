@@ -1,0 +1,8 @@
+%syntax-version=1.0.0
+%project=launchql-totp
+%uri=launchql-totp
+  
+schemas/totp/schema 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/totp/schema
+schemas/totp/procedures/urlencode [schemas/totp/schema] 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/totp/procedures/urlencode
+schemas/totp/procedures/generate_totp [schemas/totp/schema schemas/totp/procedures/urlencode] 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/totp/procedures/generate_totp
+schemas/totp/procedures/random_base32 [schemas/totp/schema] 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/totp/procedures/random_base32

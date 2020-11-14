@@ -1,0 +1,11 @@
+# NOTE keeping this minimal since we generally want everything
+
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules
+
+# npm package lock
+package-lock.json
+yarn.lock    

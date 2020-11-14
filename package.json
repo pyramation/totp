@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "totp",
+  "scripts": {
+    "build": "lerna run prepare --parallel",
+    "bootstrap": "lerna bootstrap --use-workspaces"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.12.1",
+    "@babel/core": "7.12.3",
+    "@pyramation/babel-preset-env": "0.1.0",
+    "babel-eslint": "10.1.0",
+    "babel-jest": "26.6.1",
+    "eslint": "7.12.1",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "jest": "26.6.1",
+    "lerna": "3.22.1",
+    "prettier": "2.1.2"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
