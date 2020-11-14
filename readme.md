@@ -2,7 +2,7 @@
 
 TOTP implementation in pure PostgreSQL plpgsql
 
-This extension provides the HMAC Time-Based One-Time Password Algorithm (TOTP) as specfied in RFC 4226 as pure plpgsql functions.
+This extension provides the HMAC Time-Based One-Time Password Algorithm (TOTP) as specfied in RFC 6238/4226 as pure plpgsql functions.
 
 # Usage
 
@@ -52,7 +52,10 @@ otpauth://totp/customer@email.com?secret=mysecret&period=30&issuer=Acme%20Inc
 
 # caveats
 
-Currently only supports `sha1`, pull requests welcome!
+* Currently only supports `sha1`
+* Currently only supports 20 byte secrets 
+
+pull requests welcome!
 
 # credits
 
