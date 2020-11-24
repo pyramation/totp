@@ -28,255 +28,18 @@ afterEach(async () => {
   await db.afterEach();
 });
 
-// https://www.youtube.com/watch?v=VOYxF12K1vE
-const time = '2018-12-4 20:24:20+08:00';
-const steps = 30;
-it('T_unix', async () => {
-  const { t_unix } = await db.one(
-    `
-    SELECT totp.t_unix($1::timestamptz)
-      `,
-    [time]
-  );
-  expect(t_unix).toEqual('1543926260');
-});
-it('T_unix', async () => {
-  const { t_unix } = await db.one(
-    `
-        SELECT totp.t_unix($1::timestamptz)
-          `,
-    ['1970-01-01 00:00:59']
-  );
-  expect(t_unix).toEqual('59');
-});
-it('T_unix', async () => {
-  const { t_unix } = await db.one(
-    `
-        SELECT totp.t_unix($1::timestamptz)
-          `,
-    ['2603-10-11 11:33:20']
-  );
-  expect(t_unix).toEqual('20000000000');
-});
-
-it('N', async () => {
-  // N = number of steps which have elapsed since Unix Epoch time
-  const { n } = await db.one(
-    `
-    SELECT 
-            totp.n(
-                $1,
-                $2
-            ) 
-      `,
-    [time, steps]
-  );
-  expect(n).toEqual('51464208');
-});
-
-it('N_hex', async () => {
-  const { n_hex } = await db.one(
-    `
-    SELECT 
-            totp.n_hex($1)
-      `,
-    [51464208]
-  );
-  expect(n_hex).toEqual('0000000003114810');
-});
-
-it('N_hex tp 8 byte array', async () => {
-  // 0000000003114810
-  // 00 00 00 00 03 11 48 10
-  // https://youtu.be/VOYxF12K1vE?t=460
-
-  const result = await db.one(
-    `
-    SELECT 
-            totp.n_hex_to_8_bytes( totp.n_hex($1) )
-      `,
-    [51464208]
-  );
-});
-
-it('convert base32 secret into 20 bytes', async () => {
-  // JBSWY3DPEHPK3PXP
-  // l43y22ygno65xbrdhoxd
-  // randomly generated 20 bytes number which is base32 encoded
-  //   https://youtu.be/VOYxF12K1vE?t=477
-  const result = await db.one(
-    `
-    SELECT 
-            totp.random_base32( 20 )
-      `
-  );
-  // console.log(result);
-});
-
-it('hmac', async () => {
-  // JBSWY3DPEHPK3PXP
-  // l43y22ygno65xbrdhoxd
-  // randomly generated 20 bytes number which is base32 encoded
-  //   https://youtu.be/VOYxF12K1vE?t=477
-
-  const { hmac_as_20_bytes } = await db.one(
-    `
-    SELECT 
-            totp.hmac_as_20_bytes( 
-                totp.n_hex_to_8_bytes( totp.n_hex($1) ),
-                $2
-             )::text
-      `,
-    [51464208, 'l43y22ygno65xbrdhoxd']
-  );
-  expect(hmac_as_20_bytes).toEqual(
-    '\\x1b48af986fb847a714cd647a5b44254433f55c8d'
-  );
-});
-
-it('hmac offset', async () => {
-  const { get_offset } = await db.one(
-    `
-    SELECT  totp.get_offset(
-            totp.hmac_as_20_bytes( 
-                totp.n_hex_to_8_bytes( totp.n_hex($1) ),
-                $2
-             ))
-      `,
-    [51464208, 'l43y22ygno65xbrdhoxd']
-  );
-  expect(get_offset).toEqual(13);
-});
-
-it('hmac offset', async () => {
-  const { get_offset } = await db.one(
-    `
-    SELECT  totp.get_offset(
-        '\\xaf16868fe5db00c15875f6a7f899f528ab805e9a'::bytea    
-        )
-      `
-  );
-  expect(get_offset).toEqual(10);
-});
-
-it('first 4 bytes from hmac starting at offset', async () => {
-  const { get_first_4_bytes_from_offset } = await db.one(
-    `
-    SELECT  totp.get_first_4_bytes_from_offset(
-        '\\xaf16868fe5db00c15875f6a7f899f528ab805e9a'::bytea,
-        10  
-        )
-      `
-  );
-  expect(get_first_4_bytes_from_offset).toEqual([246, 167, 248, 153]);
-});
-
-it('apply_binary_to_bytes', async () => {
-  // https://youtu.be/VOYxF12K1vE?t=554
-  const { apply_binary_to_bytes } = await db.one(
-    `
-    SELECT  totp.apply_binary_to_bytes(
-        $1::int[]  
-        )
-      `,
-    [[246, 167, 248, 153]]
-  );
-  expect(apply_binary_to_bytes).toEqual([118, 167, 248, 153]);
-  expect(apply_binary_to_bytes).toEqual([0x76, 0xa7, 0xf8, 0x99]);
-  // 0x76a7f899
-});
-
-it('compact_bytes_to_int', async () => {
-  // https://youtu.be/VOYxF12K1vE?t=554
-  const { compact_bytes_to_int } = await db.one(
-    `
-    SELECT  totp.compact_bytes_to_int(
-        $1::int[]  
-        )
-      `,
-    [[118, 167, 248, 153]]
-  );
-  expect(compact_bytes_to_int).toEqual(1990719641);
-});
-
-it('calculate_token', async () => {
-  const { calculate_token } = await db.one(
-    `
-    SELECT  totp.calculate_token(
-        $1::int,
-        6
-        )
-      `,
-    [1990719641]
-  );
-  expect(calculate_token).toEqual('719641');
-});
-
-it('calculate_token', async () => {
-  const { calculate_token } = await db.one(
-    `
-    SELECT  totp.calculate_token(
-        $1::int,
-        4
-        )
-      `,
-    [1990719641]
-  );
-  expect(calculate_token).toEqual('9641');
-});
-
-it('generate', async () => {
-  const { generate } = await db.one(
-    `
-    SELECT  totp.generate(
-        totp_secret := $1,
-        totp_interval := 30,
-        totp_length := 6,
-        time_from := $2
-        )
-      `,
-    ['Hello!Þ­¾ï', new Date()]
-  );
-  const { generate: second } = await db.one(
-    `
-    SELECT  totp.generate(
-        totp_secret := $1,
-        totp_interval := 30,
-        totp_length := 6,
-        time_from := $2
-        )
-      `,
-    ['jbswy3dpehpk3pxp', new Date()]
-  );
-  const [{ key }] = await db.any(
-    `
-        SELECT * FROM totp.generate_totp_time_key($1, $2) as key
-        `,
-    [30, new Date()]
-  );
-  // TODO test against this
-  // http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
-  // console.log({ generate, time_key: key });
-  // console.log({ second, time_key: key });
-});
-// ['vmlhl2knm27eftq7', 30, 6, '843386', '2020-02-05 22:11:40.56915+00']
-
-// 070521
-// 382234
-
-// 665163
-// 157401
 cases(
   'rfc6238',
   async (opts) => {
     const { generate } = await db.one(
       `
             SELECT  totp.generate(
-                totp_secret := $1,
-                totp_interval := 30,
-                totp_length := $2,
+                secret := $1,
+                period := 30,
+                digits := $2,
                 time_from := $3,
-                algo := $4
+                hash := $4,
+                encoding := NULL
                 )
               `,
       ['12345678901234567890', opts.len, opts.date, opts.algo]
@@ -331,9 +94,9 @@ cases(
 //     const { generate } = await db.one(
 //       `
 //             SELECT  totp.generate(
-//                 totp_secret := $1,
-//                 totp_interval := 30,
-//                 totp_length := $2,
+//                 secret := $1,
+//                 period := 30,
+//                 digits := $2,
 //                 time_from := $3,
 //                 algo := $4
 //                 )
@@ -390,11 +153,12 @@ cases(
     const { generate } = await db.one(
       `
             SELECT  totp.generate(
-                totp_secret := $1,
-                totp_interval := $5,
-                totp_length := $2,
+                secret := $1,
+                period := $5,
+                digits := $2,
                 time_from := $3,
-                algo := $4
+                hash := $4,
+                encoding := NULL
                 )
               `,
       ['12345678901234567890', opts.len, opts.date, opts.algo, opts.step]
@@ -449,10 +213,15 @@ cases(
 cases(
   'verify',
   async (opts) => {
-    const [
-      { verified }
-    ] = await db.any(
-      `SELECT * FROM totp.verify($1, $2, $3, $4, $5) as verified`,
+    const [{ verified }] = await db.any(
+      `SELECT * FROM totp.verify(
+        secret := $1,
+        check_totp := $2,
+        period := $3,
+        digits := $4,
+        time_from := $5,
+        encoding := NULL
+      ) as verified`,
       ['12345678901234567890', opts.result, opts.step, opts.len, opts.date]
     );
     expect(verified).toBe(true);
@@ -521,6 +290,78 @@ cases(
       algo: 'sha1',
       step: 30,
       result: '65353130'
+    }
+  ]
+);
+
+// it('base32_to_hex', async () => {
+//   const { base32_to_hex } = await db.one(
+//     `
+//           SELECT totp.base32_to_hex(
+//               'OH3NUPO3WOGOZZQ4'
+//             )
+//             `
+//   );
+//   expect(base32_to_hex).toEqual('71f6da3ddbb38cece61c');
+// });
+
+// it('base32_to_hex', async () => {
+//   const { base32_to_hex } = await db.one(
+//     `
+//           SELECT totp.base32_to_hex(
+//               'pv6624hvb4kdcwe2'
+//             )
+//             `
+//   );
+//   expect(base32_to_hex).toEqual('7d7ded70f50f1431589a');
+// });
+
+cases(
+  'issue',
+  async (opts) => {
+    const { generate } = await db.one(
+      `
+            SELECT  totp.generate(
+                secret := $1,
+                period := $2,
+                digits := $3,
+                time_from := $4,
+                hash := $5,
+                encoding := $6
+                )
+              `,
+      [opts.secret, opts.step, opts.len, opts.date, opts.algo, opts.encoding]
+    );
+    expect(generate).toEqual(opts.result);
+    expect(generate).toMatchSnapshot();
+  },
+  [
+    {
+      encoding: null,
+      secret: 'OH3NUPO3WOGOZZQ4',
+      date: '2020-11-14 07:46:37.212048+00',
+      len: 6,
+      step: 30,
+      algo: 'sha1',
+      result: '476240'
+    },
+    {
+      encoding: 'base32',
+      secret: 'OH3NUPO3WOGOZZQ4',
+      date: '2020-11-14 07:46:37.212048+00',
+      len: 6,
+      step: 30,
+      algo: 'sha1',
+      result: '788648'
+    },
+    {
+      encoding: 'base32',
+      secret: 'OH3NUPO',
+      date: '2020-11-14 07:46:37.212048+00',
+      len: 6,
+      step: 30,
+      algo: 'sha1',
+      result: '080176'
     }
   ]
 );

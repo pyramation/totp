@@ -1,5 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`issue case: 1 1`] = `"476240"`;
+
+exports[`issue case: 2 1`] = `"788648"`;
+
+exports[`issue case: 3 1`] = `"080176"`;
+
 exports[`rfc6238 case: 1 1`] = `"94287082"`;
 
 exports[`rfc6238 case: 2 1`] = `"07081804"`;

@@ -40,33 +40,30 @@ it('interval TOTP', async () => {
   // console.log('interval TOTP', interval);
   expect(interval).toBeTruthy();
 });
-it('timekey', async () => {
-  const [
-    { key }
-  ] = await db.any(`SELECT * FROM totp.generate_totp_time_key($1, $2) as key`, [
-    30,
-    '2020-02-05 22:11:40.56915+00'
-  ]);
-  // console.log(key, 'timekey');
-  expect(key).toEqual('0000000003241ba7');
-});
 it('TOTP', async () => {
-  const [
-    { totp }
-  ] = await db.any(`SELECT * FROM totp.generate($1, $2, $3, $4) as totp`, [
-    'vmlhl2knm27eftq7',
-    30,
-    6,
-    '2020-02-05 22:11:40.56915+00'
-  ]);
-  expect(totp).toEqual('437429');
+  const [{ totp }] = await db.any(
+    `SELECT * FROM totp.generate(
+    secret := $1, 
+    period := $2,
+    digits := $3,
+    time_from := $4,
+    encoding := 'base32'
+  ) as totp`,
+    ['vmlhl2knm27eftq7', 30, 6, '2020-02-05 22:11:40.56915+00']
+  );
+  expect(totp).toEqual('295485');
 });
 it('validation', async () => {
   const [{ verified }] = await db.any(
-    `SELECT * FROM totp.verify($1, $2, $3, $4, $5) as verified`,
-    ['vmlhl2knm27eftq7', '437429', 30, 6, '2020-02-05 22:11:40.56915+00']
-    // ['vmlhl2knm27eftq7', 30, 6, '843386', '2020-02-05 22:11:40.56915+00']
-    // ['vmlhl2knm27eftq7', 30, 6, '843386', '2020-02-05 22:11:40.56915+00']
+    `SELECT * FROM totp.verify(
+      secret := $1,
+      check_totp := $2,
+      period := $3,
+      digits := $4,
+      time_from := $5,
+      encoding := 'base32'
+    ) as verified`,
+    ['vmlhl2knm27eftq7', '295485', 30, 6, '2020-02-05 22:11:40.56915+00']
   );
   expect(verified).toBe(true);
 });

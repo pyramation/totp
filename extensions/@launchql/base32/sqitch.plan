@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=launchql-base32
+%uri=launchql-base32
+  
+schemas/base32/schema 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/base32/schema
+schemas/base32/procedures/encode [schemas/base32/schema] 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/base32/procedures/encode
+schemas/base32/procedures/decode [schemas/base32/schema schemas/base32/procedures/encode] 2017-08-11T08:11:51Z skitch <skitch@5b0c196eeb62> # add schemas/base32/procedures/decode

@@ -1,0 +1,70 @@
+{
+  "_from": "@launchql/base32@0.0.3",
+  "_id": "@launchql/base32@0.0.3",
+  "_inBundle": false,
+  "_integrity": "sha512-q4U1SsmiQCzK4uDmWCe6C8tsPqUjoOZJ9O2AEVr5dhfPWUaSzbjEw1CjHePmaVVkkBQJxmRQk2yVL9QwPrATwg==",
+  "_location": "/@launchql/base32",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "@launchql/base32@0.0.3",
+    "name": "@launchql/base32",
+    "escapedName": "@launchql%2fbase32",
+    "scope": "@launchql",
+    "rawSpec": "0.0.3",
+    "saveSpec": null,
+    "fetchSpec": "0.0.3"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@launchql/base32/-/base32-0.0.3.tgz",
+  "_shasum": "789b03b5dc4eeace8956d7f3af65a7f0c925aa95",
+  "_spec": "@launchql/base32@0.0.3",
+  "_where": "/private/var/folders/kn/177lldss4n9fwn0gh5q5wfn00000gn/T/ldpwz8jj4n9ifnai570rb",
+  "author": {
+    "name": "Web, Inc.",
+    "email": "pyramation@gmail.com"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "base32",
+  "devDependencies": {
+    "@babel/cli": "7.10.4",
+    "@babel/core": "7.10.4",
+    "@babel/plugin-proposal-class-properties": "7.10.4",
+    "@babel/plugin-proposal-export-default-from": "7.10.4",
+    "@babel/plugin-proposal-object-rest-spread": "7.10.4",
+    "@babel/plugin-transform-runtime": "7.10.4",
+    "@babel/preset-env": "7.10.4",
+    "@babel/runtime": "^7.4.2",
+    "@launchql/db-testing": "latest",
+    "@launchql/graphql-testing": "latest",
+    "babel-eslint": "10.1.0",
+    "babel-jest": "26.1.0",
+    "babel-plugin-import-graphql": "2.7.0",
+    "babel-plugin-macros": "2.8.0",
+    "eslint": "^7.3.1",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "graphql": "^14.0.2",
+    "graphql-tag": "2.10.3",
+    "jest": "26.1.0",
+    "jest-in-case": "1.0.2",
+    "prettier": "2.0.5",
+    "regenerator-runtime": "^0.13.2"
+  },
+  "gitHead": "837c793730ea982dd0c2cd9c16e92011ced2c4e6",
+  "name": "@launchql/base32",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prepare": "lql package",
+    "test": "FAST_TEST=1 launchql-templatedb && jest",
+    "test:watch": "FAST_TEST=1 jest --watch"
+  },
+  "version": "0.0.3"
+}
