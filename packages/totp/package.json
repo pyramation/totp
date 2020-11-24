@@ -8,8 +8,7 @@
   },
   "scripts": {
     "test": "FAST_TEST=1 launchql-templatedb && jest",
-    "test:watch": "FAST_TEST=1 jest --watch",
-    "prepare": "lql package"
+    "test:watch": "FAST_TEST=1 jest --watch"
   },
   "devDependencies": {
     "@babel/cli": "7.10.4",
