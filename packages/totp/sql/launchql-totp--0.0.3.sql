@@ -118,7 +118,7 @@ $EOFCODE$ LANGUAGE sql STRICT IMMUTABLE;
 
 CREATE FUNCTION totp.random_base32 ( _length int DEFAULT 20 ) RETURNS text LANGUAGE sql AS $EOFCODE$
   SELECT
-    string_agg(('{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,2,3,4,5,6,7}'::text[])[ceil(random() * 32)], '')
+    string_agg(('{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,2,3,4,5,6,7}'::text[])[ceil(get_byte(gen_random_bytes(1),0)/8 +1)], '')
   FROM
     generate_series(1, _length);
 $EOFCODE$;
