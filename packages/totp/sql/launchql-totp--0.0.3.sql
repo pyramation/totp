@@ -32,46 +32,6 @@ BEGIN
 END;
 $EOFCODE$ LANGUAGE plpgsql STRICT IMMUTABLE;
 
-CREATE FUNCTION totp.pad_secret ( input bytea, len int ) RETURNS bytea AS $EOFCODE$
-DECLARE 
-  output bytea;
-  orig_length int = octet_length(input);
-BEGIN
-  IF (orig_length = len) THEN 
-    RETURN input;
-  END IF;
-
-  -- create blank bytea size of new length
-  output = lpad('', len, 'x')::bytea;
-
-  FOR i IN 0 .. len-1 LOOP
-    output = set_byte(output, i, get_byte(input, i % orig_length));
-  END LOOP;
-
-  RETURN output;
-END;
-$EOFCODE$ LANGUAGE plpgsql IMMUTABLE;
-
-CREATE FUNCTION totp.base32_to_hex ( input text ) RETURNS text AS $EOFCODE$
-DECLARE 
-  output text[];
-  decoded text = base32.decode(input);
-  len int = character_length(decoded);
-  hx text;
-BEGIN
-
-  FOR i IN 1 .. len LOOP
-    hx = to_hex(ascii(substring(decoded from i for 1)))::text;
-    IF (character_length(hx) = 1) THEN 
-        -- if it is odd number of digits, pad a 0 so it can later 
-    		hx = '0' || hx;	
-    END IF;
-    output = array_append(output, hx);
-  END LOOP;
-
-  RETURN array_to_string(output, '');
-END;
-$EOFCODE$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE FUNCTION totp.hotp ( key bytea, c int, digits int DEFAULT 6, hash text DEFAULT 'sha1' ) RETURNS text AS $EOFCODE$
 DECLARE
@@ -84,53 +44,72 @@ BEGIN
 END;
 $EOFCODE$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE FUNCTION totp.generate ( secret text, period int DEFAULT 30, digits int DEFAULT 6, time_from timestamptz DEFAULT now(), hash text DEFAULT 'sha1', encoding text DEFAULT 'base32', clock_offset int DEFAULT 0 ) RETURNS text AS $EOFCODE$
+
+CREATE FUNCTION totp.generate ( secret bytea, period int DEFAULT 30, digits int DEFAULT 6, time_from timestamptz DEFAULT now(), hash text DEFAULT 'sha1', clock_offset int DEFAULT 0 ) RETURNS text AS $EOFCODE$
 DECLARE
     c int := FLOOR(EXTRACT(EPOCH FROM time_from) / period)::int + clock_offset;
-    key bytea;
 BEGIN
-
-  IF (encoding = 'base32') THEN 
-    key = ( '\x' || totp.base32_to_hex(secret) )::bytea;
-  ELSE 
-    key = secret::bytea;
-  END IF;
-
-  RETURN totp.hotp(key, c, digits, hash);
+  RETURN totp.hotp(secret, c, digits, hash);
 END;
-$EOFCODE$ LANGUAGE plpgsql STABLE;
+$EOFCODE$ LANGUAGE plpgsql VOLATILE;
 
-CREATE FUNCTION totp.verify ( secret text, check_totp text, period int DEFAULT 30, digits int DEFAULT 6, time_from timestamptz DEFAULT now(), hash text DEFAULT 'sha1', encoding text DEFAULT 'base32', clock_offset int DEFAULT 0 ) RETURNS boolean AS $EOFCODE$
-  SELECT totp.generate (
-    secret,
-    period,
-    digits,
-    time_from,
-    hash,
-    encoding,
-    clock_offset) = check_totp;
-$EOFCODE$ LANGUAGE sql;
 
-CREATE FUNCTION totp.url ( email text, totp_secret text, totp_interval int, totp_issuer text ) RETURNS text AS $EOFCODE$
+CREATE FUNCTION totp.constant_time_equal(a text, b text, minlength int DEFAULT 6) RETURNS boolean AS $EOFCODE$
+-- Compare all of the individual characters of each string
+-- minlength is optional, prevents timing attacks to discover the length of the string
+-- Create a table of true/false for each individual character comparison
+-- Count the true/false
+-- Compare the count of true to the number of comparisons.
+  WITH maxlen AS (
+    SELECT max(s) AS l
+    FROM (VALUES (octet_length(a)),
+                 (octet_length(b)),
+                 (minlength)) AS val(s)
+  ),
+  matches AS (
+    SELECT substring(a FROM ix for 1) = substring(b FROM ix for 1) AS eq
+    FROM (SELECT generate_series(1, (SELECT l FROM maxlen)) AS ix) AS series
+  ),
+  counts AS (
+    SELECT count(*) AS ct, eq
+    FROM matches GROUP BY eq
+  )
+  SELECT (SELECT l FROM maxlen) = coalesce((SELECT ct FROM counts WHERE eq='t'), 0)
+
+$EOFCODE$ language sql VOLATILE;
+
+CREATE FUNCTION totp.verify ( secret bytea, check_totp text, period int DEFAULT 30, digits int DEFAULT 6, time_from timestamptz DEFAULT now(), hash text DEFAULT 'sha1', clock_offset int DEFAULT 0 ) RETURNS boolean AS $EOFCODE$
+  SELECT totp.constant_time_equal(
+    totp.generate (
+      secret,
+      period,
+      digits,
+      time_from,
+      hash,
+      clock_offset),
+    check_totp);
+$EOFCODE$ LANGUAGE sql VOLATILE;
+
+CREATE FUNCTION totp.url ( email text, totp_secret bytea, totp_interval int, totp_issuer text ) RETURNS text AS $EOFCODE$
   SELECT
-    concat('otpauth://totp/', totp.urlencode (email), '?secret=', totp.urlencode (totp_secret), '&period=', totp.urlencode (totp_interval::text), '&issuer=', totp.urlencode (totp_issuer));
+    concat('otpauth://totp/',
+           totp.urlencode (email),
+           '?secret=',
+           totp.urlencode (base32.encode(totp_secret::text)),
+           '&period=',
+           totp.urlencode (totp_interval::text),
+           '&issuer=',
+           totp.urlencode (totp_issuer));
 $EOFCODE$ LANGUAGE sql STRICT IMMUTABLE;
-
-CREATE FUNCTION totp.random_base32 ( _length int DEFAULT 20 ) RETURNS text LANGUAGE sql AS $EOFCODE$
-  SELECT
-    string_agg(('{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,2,3,4,5,6,7}'::text[])[ceil(random() * 32)], '')
-  FROM
-    generate_series(1, _length);
-$EOFCODE$;
 
 CREATE FUNCTION totp.generate_secret ( hash text DEFAULT 'sha1' ) RETURNS bytea AS $EOFCODE$
 BEGIN
     -- See https://tools.ietf.org/html/rfc4868#section-2.1.2
     -- The optimal key length for HMAC is the block size of the algorithm
     CASE
-          WHEN hash = 'sha1'   THEN RETURN totp.random_base32(20); -- = 160 bits
-          WHEN hash = 'sha256' THEN RETURN totp.random_base32(32); -- = 256 bits
-          WHEN hash = 'sha512' THEN RETURN totp.random_base32(64); -- = 512 bits
+          WHEN hash = 'sha1'   THEN RETURN gen_random_bytes(20); -- = 160 bits
+          WHEN hash = 'sha256' THEN RETURN gen_random_bytes(32); -- = 256 bits
+          WHEN hash = 'sha512' THEN RETURN gen_random_bytes(64); -- = 512 bits
           ELSE
             RAISE EXCEPTION 'Unsupported hash algorithm for OTP (see RFC6238/4226).';
             RETURN NULL;
