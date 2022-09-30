@@ -100,15 +100,41 @@ BEGIN
 END;
 $EOFCODE$ LANGUAGE plpgsql STABLE;
 
+CREATE FUNCTION totp.constant_time_equal(a text, b text, minlength int DEFAULT 6) RETURNS boolean AS $EOFCODE$
+-- Compare all of the individual characters of each string
+-- minlength is optional, prevents timing attacks to discover the length of the string
+-- Create a table of true/false for each individual character comparison
+-- Count the true/false
+-- Compare the count of true to the number of comparisons.
+  WITH maxlen AS (
+    SELECT max(s) AS l
+    FROM (VALUES (octet_length(a)),
+                 (octet_length(b)),
+                 (minlength)) AS val(s)
+  ),
+  matches AS (
+    SELECT substring(a FROM ix for 1) = substring(b FROM ix for 1) AS eq
+    FROM (SELECT generate_series(1, (SELECT l FROM maxlen)) AS ix) AS series
+  ),
+  counts AS (
+    SELECT count(*) AS ct, eq
+    FROM matches GROUP BY eq
+  )
+  SELECT (SELECT l FROM maxlen) = coalesce((SELECT ct FROM counts WHERE eq='t'), 0)
+
+$EOFCODE$ language sql VOLATILE;
+
 CREATE FUNCTION totp.verify ( secret text, check_totp text, period int DEFAULT 30, digits int DEFAULT 6, time_from timestamptz DEFAULT now(), hash text DEFAULT 'sha1', encoding text DEFAULT 'base32', clock_offset int DEFAULT 0 ) RETURNS boolean AS $EOFCODE$
-  SELECT totp.generate (
-    secret,
-    period,
-    digits,
-    time_from,
-    hash,
-    encoding,
-    clock_offset) = check_totp;
+  SELECT totp.constant_time_equal(
+    totp.generate (
+      secret,
+      period,
+      digits,
+      time_from,
+      hash,
+      encoding,
+      clock_offset),
+    check_totp);
 $EOFCODE$ LANGUAGE sql;
 
 CREATE FUNCTION totp.url ( email text, totp_secret text, totp_interval int, totp_issuer text ) RETURNS text AS $EOFCODE$
